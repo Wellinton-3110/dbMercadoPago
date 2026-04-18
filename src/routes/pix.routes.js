@@ -2,9 +2,9 @@ import { Router } from "express";
 import dotenv from "dotenv";
 dotenv.config();
 
-const router = Router();
+const routes = Router();
 
-router.post("/create", async (req, res) => {
+routes.post("/create", async (req, res) => {
   try {
     const { amount, description } = req.body;
 
@@ -17,7 +17,7 @@ router.post("/create", async (req, res) => {
       },
       body: JSON.stringify({
         transaction_amount: Number(amount),
-        description: description || "Pagamento Pix",
+        description: description,
         payment_method_id: "pix",
         payer: {
           email: "test_user_123@test.com",
@@ -38,6 +38,7 @@ router.post("/create", async (req, res) => {
       id: data.id,
       qr_code: data.point_of_interaction.transaction_data.qr_code,
       qr_code_base64: data.point_of_interaction.transaction_data.qr_code_base64,
+      valorTotal: amount,
     });
   } catch (err) {
     console.error("Erro real:", err);
@@ -45,10 +46,33 @@ router.post("/create", async (req, res) => {
   }
 });
 
-// webhook (futuro)
-router.post("/webhook", (req, res) => {
-  console.log("Webhook recebido:", req.body);
-  res.sendStatus(200);
+// webhook
+routes.post("/webhook", async (req, res) => {
+  res.status(200).end();
+  const data = req.body;
+
+  try {
+    const paymentID = req.body?.data?.id;
+    if (!paymentID) return;
+
+    const confirmPayment = await fetch(
+      `https://api.mercadopago.com/v1/payments/${paymentID}`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`,
+        },
+      },
+    );
+
+    if (!confirmPayment.ok) return;
+
+    const payment = await confirmPayment.json();
+    console.log(data);
+
+    console.log("status:", payment.status);
+  } catch (err) {
+    console.error(err);
+  }
 });
 
-export default router;
+export default routes;

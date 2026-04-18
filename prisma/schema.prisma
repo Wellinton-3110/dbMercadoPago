@@ -1,0 +1,53 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model pagador {
+  id      Int    @id @default(autoincrement())
+  nome    String @db.VarChar(100)
+  senha   String @db.VarChar(20)
+  email   String @db.VarChar(255) @default("não informado")
+  cpf     String @unique @db.VarChar(11) @default("00000000000")
+  numero  String? @unique @db.VarChar(11)
+
+  compras compraPix[]
+}
+
+model compraPix {
+  id             Int      @id @default(autoincrement())
+  valor_total          Decimal @db.Decimal(10, 2)
+  data_pagamento DateTime? @default(now()) @db.DateTime(0)
+  compras_carrinho pedido[]
+  pix_id         String?  @db.VarChar(255) @default("pix realizado")
+  pagador_id Int
+  pagador    pagador @relation(fields: [pagador_id], references: [id])
+}
+
+model pedido{
+  id Int @id @default(autoincrement())
+  valor_pedido Decimal @db.Decimal(10,2)
+  quantidade Int
+  compra_id Int
+  compraPix compraPix @relation(fields: [compra_id], references: [id])
+  produto_id Int
+  celulares celulares @relation(fields: [produto_id], references: [id])
+}
+
+model celulares{
+  id Int @id @default(autoincrement())
+  nome String @db.VarChar(70)
+  marca String @db.VarChar(50)
+  valor_item Decimal @db.Decimal(10,2)
+  img String? @db.VarChar(70)
+  estoque Int
+  pedidos pedido[]
+  
+}
+
+
+
